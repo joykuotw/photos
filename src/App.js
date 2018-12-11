@@ -24,6 +24,7 @@ import ProfilePage from './components/ProfilePage';
 import Map from './components/Map';
 import CustomPhotoDialog from './components/CustomPhotoDialog';
 import ModeratorPage from './components/ModeratorPage';
+import WelcomePage from './custom/components/WelcomePage';
 
 import LoginFirebase from "./components/LoginFirebase";
 import authFirebase from './authFirebase'
@@ -70,7 +71,8 @@ class App extends Component {
       page: _.find(PAGES, page => page.path === this.props.location.pathname),
       loginLogoutDialogOpen: false,
       openPhotoDialog: false,
-      leftDrawerOpen: false
+      leftDrawerOpen: false,
+      welcomeShown: false
     };
     this.geoid = null;
     this.domRefInput = {};
@@ -209,106 +211,107 @@ class App extends Component {
   };
 
   render() {
-    return (
-      <div className="geovation-app">
-        <Header headline={this.state.page.title}
-                user={this.state.user}
-                online={this.state.online}
-                handleClickLoginLogout={this.handleClickLoginLogout}
-                handleDrawerClick={this.toggleLeftDrawer(true)}
-                handleProfileClick={() => this.goToPage(PAGES.profile)}
-        />
-
-        <main className="content">
-          <Switch>
-            { this.state.user && this.state.user.isModerator &&
-            <Route path={PAGES.moderator.path} render={(props) =>
-              <ModeratorPage {...props}
-                             photos={this.state.photosToModerate}
-              />}
-            />
-            }
-
-            <Route path={PAGES.photos.path} render={(props) =>
-              <PhotoPage {...props}
-                 file={this.state.file}
-                 location={this.state.location}
-                 online={this.state.online}
-              />}
-            />
-            { this.state.user &&
-              <Route path={PAGES.profile.path} render={(props) =>
-                <ProfilePage {...props}
+    if (!this.state.welcomeShown) {
+      return <WelcomePage {...this.props} />
+    } else {
+      return (
+        <div className="geovation-app">
+          <Header headline={this.state.page.title}
                   user={this.state.user}
+                  online={this.state.online}
+                  handleClickLoginLogout={this.handleClickLoginLogout}
+                  handleDrawerClick={this.toggleLeftDrawer(true)}
+                  handleProfileClick={() => this.goToPage(PAGES.profile)}
+          />
+
+          <main className="content">
+            <Switch>
+              { this.state.user && this.state.user.isModerator &&
+              <Route path={PAGES.moderator.path} render={(props) =>
+                <ModeratorPage {...props}
+                               photos={this.state.photosToModerate}
                 />}
               />
-            }
-          </Switch>
+              }
 
+              <Route path={PAGES.photos.path} render={(props) =>
+                <PhotoPage {...props}
+                   file={this.state.file}
+                   location={this.state.location}
+                   online={this.state.online}
+                />}
+              />
+              { this.state.user &&
+                <Route path={PAGES.profile.path} render={(props) =>
+                  <ProfilePage {...props}
+                    user={this.state.user}
+                  />}
+                />
+              }
+            </Switch>
+            
+            <Map location={this.state.location} visible={this.props.history.location.pathname === PAGES.map.path}/>
+          </main>
 
-          <Map location={this.state.location}
-               visible={this.props.history.location.pathname === PAGES.map.path}/>
+          <footer>
+            <BottomNavigation className="footer"
+              value={this.state.page}
+              onChange={this.handlePage}
+              showLabels
+            >
+              <BottomNavigationAction icon={<MapIcon />} value={PAGES.map} label={PAGES.map.label}/>
+              <BottomNavigationAction icon={<AddAPhotoIcon />} value={PAGES.photos} label={PAGES.photos.label} onClick={this.handlePhotoClick} />
 
-        </main>
+              {authFirebase.isModerator() && <BottomNavigationAction icon={<CheckIcon />} value={PAGES.moderator} label={PAGES.moderator.label}/>}
 
-        <footer>
-          <BottomNavigation className="footer"
-            value={this.state.page}
-            onChange={this.handlePage}
-            showLabels
-          >
-            <BottomNavigationAction icon={<MapIcon />} value={PAGES.map} label={PAGES.map.label}/>
-            <BottomNavigationAction icon={<AddAPhotoIcon />} value={PAGES.photos} label={PAGES.photos.label} onClick={this.handlePhotoClick} />
+            </BottomNavigation>
+          </footer>
 
-            {authFirebase.isModerator() && <BottomNavigationAction icon={<CheckIcon />} value={PAGES.moderator} label={PAGES.moderator.label}/>}
+          <Snackbar open={!this.state.online} message='Network not available' className="offline"/>
 
-          </BottomNavigation>
-        </footer>
+          { window.cordova ?
+            <CustomPhotoDialog open={this.state.openPhotoDialog} onClose={this.handlePhotoDialogClose}/>
+          :
+            <RootRef rootRef={this.domRefInput}>
+              <input className='hidden' type='file' accept='image/*'
+                     onChange={this.openFile}
+              />
+            </RootRef>
+          }
 
-        <Snackbar open={!this.state.online} message='Network not available' className="offline"/>
+          <Login
+            open={this.state.loginLogoutDialogOpen && !this.state.user}
+            handleClose={this.handleLoginClose}
+            loginComponent={LoginFirebase}
+          />
 
-        { window.cordova ?
-          <CustomPhotoDialog open={this.state.openPhotoDialog} onClose={this.handlePhotoDialogClose}/>
-        :
-          <RootRef rootRef={this.domRefInput}>
-            <input className='hidden' type='file' accept='image/*'
-                   onChange={this.openFile}
-            />
-          </RootRef>
-        }
-
-        <Login
-          open={this.state.loginLogoutDialogOpen && !this.state.user}
-          handleClose={this.handleLoginClose}
-          loginComponent={LoginFirebase}
-        />
-
-        <Drawer open={this.state.leftDrawerOpen} onClose={this.toggleLeftDrawer(false)}>
-          <div
-            tabIndex={0}
-            role="button"
-            onClick={this.toggleLeftDrawer(false)}
-            onKeyDown={this.toggleLeftDrawer(false)}
-          >
-            <div>
-              <List>
-                <ListItem button>
-                  <ListItemIcon><HelpIcon /></ListItemIcon>
-                  <ListItemText primary={"about"} />
-                </ListItem>
-              </List>
-              <Divider />
-              <List>
-                <ListItem button>
-                  <ListItemIcon><SchoolIcon /></ListItemIcon>
-                  <ListItemText primary={"tutorial"} />
-                </ListItem>
-              </List>
+          <Drawer open={this.state.leftDrawerOpen} onClose={this.toggleLeftDrawer(false)}>
+            <div
+              tabIndex={0}
+              role="button"
+              onClick={this.toggleLeftDrawer(false)}
+              onKeyDown={this.toggleLeftDrawer(false)}
+            >
+              <div>
+                <List>
+                  <ListItem button>
+                    <ListItemIcon><HelpIcon /></ListItemIcon>
+                    <ListItemText primary={"about"} />
+                  </ListItem>
+                </List>
+                <Divider />
+                <List>
+                  <ListItem button>
+                    <ListItemIcon><SchoolIcon /></ListItemIcon>
+                    <ListItemText primary={"tutorial"} />
+                  </ListItem>
+                </List>
+              </div>
             </div>
-          </div>
-        </Drawer>
-      </div>
-    );
+          </Drawer>
+        </div>
+      );
+    }
   }
 }
 

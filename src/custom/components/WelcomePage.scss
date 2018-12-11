@@ -1,0 +1,24 @@
+.geovation-welcome {
+  display: flex;
+  flex-direction: column;    
+  justify-content: center;
+  height: 100%;
+
+  .welcome-title {
+    font-size: 28px;
+  }
+
+  .img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .welcome-content {
+    margin-top: 15px;
+    font-size: 20px;
+  }
+
+  .swiper {
+    margin: 15px;
+  }
+}
